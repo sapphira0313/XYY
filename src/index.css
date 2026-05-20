@@ -1,0 +1,206 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans;
+    min-height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    transition: background-image 0.3s ease, background-color 0.3s ease;
+  }
+}
+
+@layer components {
+  .nav-item {
+    @apply flex min-w-[85px] cursor-move flex-col items-center justify-center bg-transparent p-3 text-white transition-all duration-300;
+  }
+
+  .nav-item:hover {
+    @apply -translate-y-2;
+  }
+
+  .nav-item.drag-over {
+    @apply -translate-y-1 rounded-lg bg-white/20;
+  }
+
+  .nav-grid.is-dragging .nav-item {
+    @apply opacity-95;
+  }
+
+  .nav-grid {
+    @apply mb-2 grid gap-2;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  }
+
+  .nav-icon {
+    @apply mb-2 h-8 w-8 rounded-md border-none bg-transparent object-contain opacity-100 transition-opacity duration-300;
+  }
+
+  .nav-name {
+    @apply line-clamp-2 max-w-[90px] break-words text-center text-sm font-medium;
+  }
+
+  .group-title {
+    @apply my-1 cursor-move whitespace-nowrap rounded-md px-3 py-2 text-left text-xl font-semibold text-white transition-colors duration-300;
+  }
+
+  .group-title:hover {
+    @apply bg-primary-500/20;
+  }
+
+  .group-icon-item {
+    @apply cursor-pointer border-none bg-transparent;
+    transition: all 0.3s ease;
+  }
+
+  .group-icon-item:hover {
+    transform: scale(1.05);
+  }
+
+  .search-input {
+    @apply flex-1 rounded-full border-2 border-white/30 bg-white/20 px-16 py-4 text-white backdrop-blur-md transition-all duration-300 focus:border-primary-500 focus:outline-none;
+  }
+
+  .search-btn {
+    @apply absolute right-5 z-10 h-10 w-10 flex-shrink-0 cursor-pointer rounded-full border-none bg-transparent text-white transition-all duration-300;
+  }
+
+  .search-btn:hover {
+    @apply scale-105 bg-secondary-300/50;
+  }
+
+  .engine-option {
+    @apply border-none bg-transparent cursor-pointer;
+  }
+
+  .engine-option:hover {
+    @apply bg-secondary-100/80;
+  }
+
+  .time {
+    @apply mb-[-15px] text-6xl font-bold text-white text-shadow-md;
+  }
+
+  .date {
+    @apply mb-2 mt-4 text-base text-white/80 text-shadow-md;
+  }
+
+  .top-section {
+    padding-top: 1%;
+  }
+
+  .group-content {
+    animation-duration: 300ms;
+    animation-timing-function: ease-out;
+  }
+}
+
+body {
+  margin: 0;
+}
+
+.group-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.group-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.group-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.group-sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+@layer utilities {
+  .text-shadow-md {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  .text-shadow-lg {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  .writing-mode-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+}
+
+.group-content.fade-in {
+  animation-name: fadeIn;
+}
+
+.group-content.fade-out {
+  animation-name: fadeOut;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.nav-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-icon-wrapper.loading .nav-icon {
+  opacity: 0.5;
+}
+
+.nav-icon-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  color: white;
+}
+
+.nav-icon-loading svg {
+  width: 100%;
+  height: 100%;
+}
+
+
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
