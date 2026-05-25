@@ -45,22 +45,20 @@ function App() {
   const [editingWebsite, setEditingWebsite] = useState<Website | null>(null);
   const [showGroupEditor, setShowGroupEditor] = useState(false);
   const [editingGroup, setEditingGroup] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
+  // 优先显示本地缓存，后台静默同步 Supabase
   useEffect(() => {
-    const loadData = async () => {
+    const syncSupabase = async () => {
       try {
         const groups = await loadWebsiteGroupsFromSupabase();
         if (groups.length > 0) {
           setWebsiteGroups(groups);
         }
       } catch (error) {
-        logger.error('Failed to load from Supabase:', error);
-      } finally {
-        setIsLoading(false);
+        // 静默失败，不影响用户体验
       }
     };
-    loadData();
+    syncSupabase();
   }, [setWebsiteGroups]);
 
   const searchSuggestions = useMemo(() => {
@@ -145,14 +143,6 @@ function App() {
   };
 
   const allResults = filteredWebsites();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-white text-xl">加载中...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex">

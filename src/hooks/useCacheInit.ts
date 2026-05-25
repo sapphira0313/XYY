@@ -5,14 +5,24 @@ import { logger } from '../utils/logger';
 
 export function useCacheInit(): void {
   useEffect(() => {
-    const initCache = async (): Promise<void> => {
+    // 先快速初始化（只加载已有的缓存）
+    const initFast = async (): Promise<void> => {
       try {
-        await cacheManager.initializeAndCheck(DEFAULT_WEBSITE_GROUPS);
+        await cacheManager.initialize();
       } catch (error) {
-        logger.warn('Cache initialization failed:', error);
+        logger.warn('Fast cache init failed:', error);
       }
+      
+      // 后台缓慢检查和修复缓存，不阻塞页面显示
+      setTimeout(async () => {
+        try {
+          await cacheManager.checkAndRepairCache(DEFAULT_WEBSITE_GROUPS);
+        } catch (error) {
+          logger.warn('Cache repair failed:', error);
+        }
+      }, 3000); // 延迟 3 秒后开始缓存检查
     };
 
-    initCache();
+    initFast();
   }, []);
 }
