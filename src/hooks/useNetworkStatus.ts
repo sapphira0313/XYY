@@ -22,9 +22,8 @@ export function useNetworkStatus() {
     }
 
     try {
-      await fetch('https://www.google.com/favicon.ico', {
+      await fetch('https://cloudflare.com/cdn-cgi/trace', {
         method: 'HEAD',
-        mode: 'no-cors',
       });
       return true;
     } catch {

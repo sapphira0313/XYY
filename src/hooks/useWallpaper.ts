@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { cacheManager } from '../utils/cacheManager';
 import { DEFAULT_WALLPAPERS } from '../data/navigation';
+import { logger } from '../utils/logger';
 
 interface UseWallpaperOptions {
   useCache?: boolean;
@@ -38,7 +39,7 @@ export function useWallpaper(
       const cachedUrl = useCache ? await cacheManager.cacheWallpaper(wallpaperUrl) : wallpaperUrl;
       setSrc(cachedUrl);
     } catch (err) {
-      console.warn('Failed to load wallpaper:', wallpaperUrl, err);
+      logger.warn('Failed to load wallpaper:', wallpaperUrl, err);
       setError(err instanceof Error ? err : new Error('Failed to load wallpaper'));
       setSrc(wallpaperUrl);
     } finally {

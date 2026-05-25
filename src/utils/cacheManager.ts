@@ -1,13 +1,16 @@
 import type { WebsiteGroup, Wallpaper } from '../types/navigation';
 import { DEFAULT_WALLPAPERS } from '../data/navigation';
+import { logger } from './logger';
 
-const CACHE_VERSION = '1.1.0';
+const CACHE_VERSION = '1.2.0';
 const CACHE_PREFIX = 'zhiniao_cache_';
 const CACHE_METADATA_KEY = `${CACHE_PREFIX}metadata`;
 const ICON_CACHE_KEY = `${CACHE_PREFIX}icons`;
 const WALLPAPER_CACHE_KEY = `${CACHE_PREFIX}wallpapers`;
 const LAST_CHECK_KEY = `${CACHE_PREFIX}last_check`;
 const CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
+
+const GOOGLE_FAVICON_REGEX = /^https?:\/\/www\.google\.com\/s2\/favicons/;
 
 interface CacheMetadata {
   version: string;
@@ -40,7 +43,6 @@ class CacheManager {
   private wallpaperCache: Map<string, WallpaperCacheEntry> = new Map();
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
-  private silentMode = true;
   private integrityCheckPromise: Promise<void> | null = null;
 
   async initialize(): Promise<void> {
@@ -54,7 +56,44 @@ class CacheManager {
 
   private async _doInitialize(): Promise<void> {
     await this.loadMetadata();
+    await this.migrateOldData();
     await this.loadCacheIndex();
+  }
+
+  private async migrateOldData(): Promise<void> {
+    try {
+      const savedGroups = localStorage.getItem('websiteGroups');
+      if (savedGroups) {
+        try {
+          const parsedGroups = JSON.parse(savedGroups);
+          let needsSave = false;
+          
+          parsedGroups.forEach((group: any) => {
+            if (group.websites) {
+              group.websites.forEach((site: any) => {
+                if (site.icon && GOOGLE_FAVICON_REGEX.test(site.icon)) {
+                  const match = site.icon.match(/domain=([^&]+)/);
+                  if (match) {
+                    site.icon = `https://${match[1]}/favicon.ico`;
+                    needsSave = true;
+                  }
+                }
+              });
+            }
+          });
+          
+          if (needsSave) {
+            localStorage.setItem('websiteGroups', JSON.stringify(parsedGroups));
+            logger.info('Migrated old website groups data');
+          }
+        } catch {
+          localStorage.removeItem('websiteGroups');
+          logger.info('Removed corrupted website groups data');
+        }
+      }
+    } catch (error) {
+      logger.warn('Failed to migrate old data:', error);
+    }
   }
 
   private getStorageKey(key: string): string {
@@ -68,11 +107,11 @@ class CacheManager {
 
       const metadata: CacheMetadata = JSON.parse(metadataStr);
       if (metadata.version !== CACHE_VERSION) {
-        console.log('Cache version mismatch, clearing old cache');
+        logger.info('Cache version mismatch, clearing old cache');
         await this.clearAllCache();
       }
     } catch (error) {
-      console.warn('Failed to load cache metadata:', error);
+      logger.warn('Failed to load cache metadata:', error);
     }
   }
 
@@ -80,22 +119,35 @@ class CacheManager {
     try {
       const iconIndexStr = localStorage.getItem(this.getStorageKey(ICON_CACHE_KEY));
       const wallpaperIndexStr = localStorage.getItem(this.getStorageKey(WALLPAPER_CACHE_KEY));
+      let needsSave = false;
 
       if (iconIndexStr) {
         const iconData = JSON.parse(iconIndexStr);
         Object.entries(iconData).forEach(([url, entry]) => {
-          this.iconCache.set(url, entry as IconCacheEntry);
+          if (!GOOGLE_FAVICON_REGEX.test(url)) {
+            this.iconCache.set(url, entry as IconCacheEntry);
+          } else {
+            needsSave = true;
+          }
         });
       }
 
       if (wallpaperIndexStr) {
         const wallpaperData = JSON.parse(wallpaperIndexStr);
         Object.entries(wallpaperData).forEach(([url, entry]) => {
-          this.wallpaperCache.set(url, entry as WallpaperCacheEntry);
+          if (!GOOGLE_FAVICON_REGEX.test(url)) {
+            this.wallpaperCache.set(url, entry as WallpaperCacheEntry);
+          } else {
+            needsSave = true;
+          }
         });
       }
+
+      if (needsSave) {
+        await this.saveCacheIndex();
+      }
     } catch (error) {
-      console.warn('Failed to load cache index:', error);
+      logger.warn('Failed to load cache index:', error);
     }
   }
 
@@ -126,7 +178,7 @@ class CacheManager {
       localStorage.setItem(this.getStorageKey(ICON_CACHE_KEY), JSON.stringify(iconData));
       localStorage.setItem(this.getStorageKey(WALLPAPER_CACHE_KEY), JSON.stringify(wallpaperData));
     } catch (error) {
-      console.warn('Failed to save cache index:', error);
+      logger.warn('Failed to save cache index:', error);
     }
   }
 
@@ -184,18 +236,16 @@ class CacheManager {
       
       return base64;
     } catch (error) {
-      if (!this.silentMode) {
-        console.debug('Failed to cache icon:', originalUrl, error);
-      }
-      
       const existingEntry = this.iconCache.get(originalUrl);
+      const retryCount = (existingEntry?.retryCount || 0) + 1;
+      
       const entry: IconCacheEntry = {
         originalUrl,
         cachedBase64: existingEntry?.cachedBase64 || null,
         timestamp: Date.now(),
         size: existingEntry?.size || 0,
         status: 'error',
-        retryCount: (existingEntry?.retryCount || 0) + 1,
+        retryCount,
       };
       
       this.iconCache.set(originalUrl, entry);
@@ -242,18 +292,20 @@ class CacheManager {
       
       return base64;
     } catch (error) {
-      if (!this.silentMode) {
-        console.debug('Failed to cache wallpaper:', originalUrl, error);
+      const existingEntry = this.wallpaperCache.get(originalUrl);
+      const retryCount = (existingEntry?.retryCount || 0) + 1;
+      
+      if (retryCount <= 1) {
+        logger.debug('Failed to cache wallpaper (attempt', retryCount, '):', originalUrl);
       }
       
-      const existingEntry = this.wallpaperCache.get(originalUrl);
       const entry: WallpaperCacheEntry = {
         originalUrl,
         cachedBase64: existingEntry?.cachedBase64 || null,
         timestamp: Date.now(),
         size: existingEntry?.size || 0,
         status: 'error',
-        retryCount: (existingEntry?.retryCount || 0) + 1,
+        retryCount,
       };
       
       this.wallpaperCache.set(originalUrl, entry);
@@ -297,6 +349,18 @@ class CacheManager {
       return cached.cachedBase64;
     }
     return null;
+  }
+
+  setCachedIcon(originalUrl: string, cachedBase64: string): void {
+    const entry: IconCacheEntry = {
+      originalUrl,
+      cachedBase64,
+      timestamp: Date.now(),
+      size: cachedBase64.length,
+      status: 'cached',
+      retryCount: 0,
+    };
+    this.iconCache.set(originalUrl, entry);
   }
 
   getCachedWallpaper(originalUrl: string): string | null {

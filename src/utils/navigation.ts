@@ -1,4 +1,5 @@
 import type { WebsiteGroup, Website } from '../types/navigation';
+import { logger } from './logger';
 
 function cloneGroups(groups: WebsiteGroup[]): WebsiteGroup[] {
   return groups.map(group => ({
@@ -27,14 +28,14 @@ export function reorderWebsiteGroups(
   const targetGroup = clonedGroups.find(g => g.id === targetGroupId);
 
   if (!sourceGroup || !targetGroup) {
-    console.warn('reorderWebsiteGroups: Group not found', { sourceGroupId, targetGroupId });
+    logger.warn('reorderWebsiteGroups: Group not found', { sourceGroupId, targetGroupId });
     return groups;
   }
 
   const [movedWebsite] = sourceGroup.websites.splice(sourceIndex, 1);
   
   if (!movedWebsite) {
-    console.warn('reorderWebsiteGroups: Website not found at index', { sourceGroupId, sourceIndex });
+    logger.warn('reorderWebsiteGroups: Website not found at index', { sourceGroupId, sourceIndex });
     return groups;
   }
 

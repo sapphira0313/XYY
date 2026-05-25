@@ -4,6 +4,22 @@ import { cacheManager } from '../utils/cacheManager';
 const FALLBACK_ICON =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>';
 
+function extractDomain(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+  } catch {
+    return null;
+  }
+}
+
+function getBackupIconUrls(domain: string): string[] {
+  return [
+    `https://favicon.bytedance.net/api/favicon?url=${domain}`,
+    `https://favicon.im/favicon?url=${domain}`,
+  ];
+}
+
 interface UseIconOptions {
   fallbackUrl?: string;
   useCache?: boolean;
@@ -51,6 +67,9 @@ export function useIcon(
       return;
     }
 
+    const domain = extractDomain(iconUrl);
+    const backupUrls = domain ? getBackupIconUrls(domain) : [];
+
     try {
       await cacheManager.initialize();
       
@@ -64,7 +83,17 @@ export function useIcon(
       const cachedUrl = await cacheManager.cacheIcon(iconUrl);
       setSrc(cachedUrl);
     } catch (err) {
-      console.debug('Failed to load icon:', iconUrl, err);
+      for (const backupUrl of backupUrls) {
+        try {
+          const cachedUrl = await cacheManager.cacheIcon(backupUrl);
+          setSrc(cachedUrl);
+          setError(null);
+          setIsLoading(false);
+          return;
+        } catch {
+        }
+      }
+
       setError(err instanceof Error ? err : new Error('Failed to load icon'));
       if (src === url) {
         setSrc(fallbackUrl);

@@ -12,6 +12,8 @@ interface GroupContentProps {
   onDragStart: (event: DragEvent<HTMLAnchorElement>, groupId: string, index: number) => void;
   onDragOver: (event: DragEvent<HTMLAnchorElement>) => void;
   onDrop: (event: DragEvent<HTMLAnchorElement>, groupId: string, index: number) => void;
+  onEdit: (site: Website) => void;
+  onAddGroup?: () => void;
 }
 
 interface WebsiteSectionDefinition {
@@ -32,7 +34,16 @@ function getSections(group: WebsiteGroup): WebsiteSectionDefinition[] {
   })).filter((section) => section.websites.length > 0);
 }
 
-export function GroupContent({ group, activeSectionId, animationClass, onDragStart, onDragOver, onDrop }: GroupContentProps) {
+export function GroupContent({ 
+  group, 
+  activeSectionId, 
+  animationClass, 
+  onDragStart, 
+  onDragOver, 
+  onDrop,
+  onEdit,
+  onAddGroup,
+}: GroupContentProps) {
   const sections = getSections(group);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -81,9 +92,13 @@ export function GroupContent({ group, activeSectionId, animationClass, onDragSta
     }
   }, [activeSectionId]);
 
+  const filteredSections = activeSectionId
+    ? sections.filter((section) => section.key === activeSectionId)
+    : sections;
+
   return (
     <div className={`group-content ${animationClass}`}>
-      {sections.map((section) => (
+      {filteredSections.map((section) => (
         <div key={section.key} id={`section-${section.key}`} className={section.className}>
           <h3 className="text-lg font-medium text-white mb-3 text-shadow-md">{section.title}</h3>
           <div className={`nav-grid${isDragging ? ' is-dragging' : ''}`}>
@@ -100,9 +115,21 @@ export function GroupContent({ group, activeSectionId, animationClass, onDragSta
                 onDragEnter={() => handleDragEnterWithState(index)}
                 onDragLeave={() => handleDragLeaveWithState(index)}
                 onDrop={handleDropWithState}
+                onEdit={onEdit}
               />
             ))}
           </div>
+          {section.key === 'social' && onAddGroup && (
+            <div className="mt-4">
+              <button
+                onClick={onAddGroup}
+                className="w-10 h-10 flex items-center justify-center text-white text-xl font-bold bg-white/10 hover:bg-white/20 rounded-lg transition-colors border border-white/20"
+                title="添加分组"
+              >
+                +
+              </button>
+            </div>
+          )}
         </div>
       ))}
     </div>

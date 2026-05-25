@@ -14,6 +14,7 @@ interface NavItemProps {
   onDragEnter?: () => void;
   onDragLeave?: () => void;
   onDrop: (event: DragEvent<HTMLAnchorElement>, groupId: string, index: number) => void;
+  onEdit: (site: Website) => void;
 }
 
 export function NavItem({
@@ -27,8 +28,14 @@ export function NavItem({
   onDragEnter,
   onDragLeave,
   onDrop,
+  onEdit,
 }: NavItemProps) {
   const { src: cachedIcon, fallbackSrc } = useIcon(site.icon);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onEdit(site);
+  };
 
   return (
     <a
@@ -47,6 +54,7 @@ export function NavItem({
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
       onDrop={(event) => onDrop(event, groupId, index)}
+      onContextMenu={handleContextMenu}
     >
       <div className="nav-icon-wrapper">
         <img

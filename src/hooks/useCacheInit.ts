@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { cacheManager } from '../utils/cacheManager';
 import { DEFAULT_WEBSITE_GROUPS } from '../data/navigation';
+import { logger } from '../utils/logger';
 
 export function useCacheInit(): void {
   useEffect(() => {
@@ -8,7 +9,7 @@ export function useCacheInit(): void {
       try {
         await cacheManager.initializeAndCheck(DEFAULT_WEBSITE_GROUPS);
       } catch (error) {
-        console.warn('Cache initialization failed:', error);
+        logger.warn('Cache initialization failed:', error);
       }
     };
 

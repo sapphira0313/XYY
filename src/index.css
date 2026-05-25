@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply font-sans;
+    font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft Sans Serif', 'WenQuanYi Micro Hei', sans-serif;
     min-height: 100vh;
     background-size: cover;
     background-position: center;

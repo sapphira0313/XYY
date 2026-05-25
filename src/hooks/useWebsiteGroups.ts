@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react
 import { STORAGE_KEYS, loadStoredWebsiteGroups } from '../data/navigation';
 import type { WebsiteGroup } from '../types/navigation';
 import { reorderWebsiteGroups } from '../utils/navigation';
+import { logger } from '../utils/logger';
 
 export function useWebsiteGroups() {
   const [websiteGroups, setWebsiteGroups] = useState<WebsiteGroup[]>(() => loadStoredWebsiteGroups());
@@ -39,7 +40,7 @@ export function useWebsiteGroups() {
         reorderWebsiteGroups(previousGroups, sourceGroupId, sourceIndex, targetGroupId, targetIndex),
       );
     } catch (error) {
-      console.error('Failed to process drag data:', error);
+      logger.error('Failed to process drag data:', error);
     }
   }, []);
 
@@ -59,6 +60,7 @@ export function useWebsiteGroups() {
 
   return {
     websiteGroups,
+    setWebsiteGroups,
     activeGroup,
     activeGroupId,
     setActiveGroupId,

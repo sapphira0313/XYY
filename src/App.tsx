@@ -1,16 +1,19 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { logger } from './utils/logger';
 
 import { ClockDisplay } from './components/ClockDisplay';
 import { GroupContent } from './components/GroupContent';
 import { SearchBar } from './components/SearchBar';
 import { TopNav } from './components/TopNav';
-import { CacheStatus } from './components/CacheStatus';
 import { WallpaperPreview } from './components/WallpaperPreview';
+import { WebsiteEditor } from './components/WebsiteEditor';
+import { GroupEditor } from './components/GroupEditor';
 import { SEARCH_ENGINES, GROUP_SECTIONS } from './data/navigation';
 import { useSearch } from './hooks/useSearch';
 import { useWallpaperRotation } from './hooks/useWallpaperRotation';
 import { useWebsiteGroups } from './hooks/useWebsiteGroups';
 import type { Website } from './types/navigation';
+import { loadWebsiteGroupsFromSupabase } from './utils/supabaseStore';
 
 function App() {
   const {
@@ -19,6 +22,7 @@ function App() {
     handleDragOver,
     handleDrop,
     websiteGroups,
+    setWebsiteGroups,
   } = useWebsiteGroups();
   const {
     searchContainerRef,
@@ -36,32 +40,48 @@ function App() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  
+  const [showWebsiteEditor, setShowWebsiteEditor] = useState(false);
+  const [editingWebsite, setEditingWebsite] = useState<Website | null>(null);
+  const [showGroupEditor, setShowGroupEditor] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 搜索建议：基于当前搜索框输入的内容
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const groups = await loadWebsiteGroupsFromSupabase();
+        if (groups.length > 0) {
+          setWebsiteGroups(groups);
+        }
+      } catch (error) {
+        logger.error('Failed to load from Supabase:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [setWebsiteGroups]);
+
   const searchSuggestions = useMemo(() => {
     if (!searchQuery.trim() || searchQuery.length < 1) return [];
 
     const query = searchQuery.toLowerCase();
     const suggestions: Website[] = [];
 
-    // 搜索所有分组的网站
     websiteGroups.forEach(group => {
       group.websites.forEach(site => {
-        // 匹配网站名称或网址
         if (site.name.toLowerCase().includes(query) || site.url.toLowerCase().includes(query)) {
           suggestions.push(site);
         }
       });
     });
 
-    return suggestions.slice(0, 10); // 最多显示10条建议
+    return suggestions.slice(0, 10);
   }, [searchQuery, websiteGroups]);
 
-  // 选择搜索建议时打开网站
   const handleSelectSuggestion = useCallback((website: Website) => {
-    // 清空搜索框
     setSearchQuery('');
-    // 在新标签页打开网站
     window.open(website.url, '_blank', 'noopener,noreferrer');
   }, [setSearchQuery]);
 
@@ -100,17 +120,55 @@ function App() {
     }
   };
 
+  const handleEditWebsite = (site: Website) => {
+    setEditingWebsite(site);
+    setShowWebsiteEditor(true);
+  };
+
+  const handleSaveWebsite = async () => {
+    try {
+      const groups = await loadWebsiteGroupsFromSupabase();
+      setWebsiteGroups(groups);
+    } catch (error) {
+      logger.error('Failed to reload websites:', error);
+    }
+  };
+
+  const handleAddWebsite = () => {
+    setEditingWebsite(null);
+    setShowWebsiteEditor(true);
+  };
+
+  const handleAddGroup = () => {
+    setEditingGroup(null);
+    setShowGroupEditor(true);
+  };
+
   const allResults = filteredWebsites();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-white text-xl">加载中...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
-      <CacheStatus />
       <TopNav activeSectionId={activeSectionId} onSelectSection={handleSelectSection} />
 
       <div className="main-content-wrapper flex-1 ml-52 flex flex-col h-screen">
         <main className="flex-1 overflow-y-auto" id="main-content">
           <div className="max-w-6xl mx-auto px-4 py-8">
-            <header className="text-center mb-8">
+            <header className="text-center mb-8 relative">
+              <button
+                onClick={handleAddWebsite}
+                className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center text-white text-xl font-bold hover:bg-white/10 rounded-lg transition-colors"
+                title="添加网站"
+              >
+                +
+              </button>
               <ClockDisplay />
               <SearchBar
                 containerRef={searchContainerRef}
@@ -137,6 +195,8 @@ function App() {
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
+                  onEdit={handleEditWebsite}
+                  onAddGroup={handleAddGroup}
                 />
               ) : null}
             </div>
@@ -239,6 +299,21 @@ function App() {
           setWallpaperIndex(index);
           setShowWallpaperPreview(false);
         }}
+      />
+
+      <WebsiteEditor
+        website={editingWebsite}
+        isOpen={showWebsiteEditor}
+        onClose={() => setShowWebsiteEditor(false)}
+        onSave={handleSaveWebsite}
+        groups={websiteGroups}
+      />
+
+      <GroupEditor
+        group={editingGroup}
+        isOpen={showGroupEditor}
+        onClose={() => setShowGroupEditor(false)}
+        onSave={handleSaveWebsite}
       />
     </div>
   );
