@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_WALLPAPERS } from '../data/navigation';
 import { cacheManager } from '../utils/cacheManager';
 
@@ -18,20 +18,17 @@ export function WallpaperPreview({ isOpen, onClose, onSelect }: WallpaperPreview
       return;
     }
     
+    // 只在打开预览打开时快速加载已有的缓存，不主动预加载新壁纸
     const loadCachedUrls = async () => {
       try {
         await cacheManager.initialize();
         const urls = new Map<number, string>();
         
-        await Promise.all(DEFAULT_WALLPAPERS.map(async (wallpaper, index) => {
+        // 只获取已缓存的，不主动下载新的
+        DEFAULT_WALLPAPERS.forEach((wallpaper, index) => {
           const cached = cacheManager.getCachedWallpaper(wallpaper.url);
-          if (cached) {
-            urls.set(index, cached);
-          } else {
-            const newCached = await cacheManager.cacheWallpaper(wallpaper.url);
-            urls.set(index, newCached || wallpaper.url);
-          }
-        }));
+          urls.set(index, cached || wallpaper.url);
+        });
         
         setCachedUrls(urls);
       } catch {
@@ -45,6 +42,23 @@ export function WallpaperPreview({ isOpen, onClose, onSelect }: WallpaperPreview
 
     loadCachedUrls();
   }, [isOpen]);
+
+  const handleMouseEnter = useCallback((index: number) => {
+    setHoveredIndex(index);
+    // 只在鼠标悬停时才尝试预加载单个壁纸
+    const wallpaper = DEFAULT_WALLPAPERS[index];
+    if (wallpaper && !cachedUrls.has(index) || !cacheManager.getCachedWallpaper(wallpaper.url)) {
+      cacheManager.cacheWallpaper(wallpaper.url).then(cached => {
+        setCachedUrls(prev => {
+          const newMap = new Map(prev);
+          newMap.set(index, cached);
+          return newMap;
+        });
+      }).catch(() => {
+        // 忽略错误
+      });
+    }
+  }, [cachedUrls]);
 
   if (!isOpen) return null;
 
@@ -75,7 +89,7 @@ export function WallpaperPreview({ isOpen, onClose, onSelect }: WallpaperPreview
             <div
               key={wallpaper.url}
               className="relative group aspect-video rounded-xl overflow-hidden cursor-pointer bg-gray-800"
-              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseEnter={() => handleMouseEnter(index)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
               <img

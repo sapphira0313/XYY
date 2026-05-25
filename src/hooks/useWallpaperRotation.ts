@@ -39,7 +39,7 @@ function applyWallpaper(index: number): void {
   const wallpaper = DEFAULT_WALLPAPERS[normalizedIndex];
 
   try {
-    cacheManager.initialize();
+    // 不等待初始化，直接尝试获取缓存
     const cachedUrl = cacheManager.getCachedWallpaper(wallpaper.url);
     document.body.style.backgroundImage = `url('${cachedUrl || wallpaper.url}')`;
   } catch {
@@ -88,20 +88,21 @@ export function useWallpaperRotation() {
     return () => clearTimeout(timerId);
   }, [currentWallpaperIndex]);
 
-  useEffect(() => {
-    const preloadNextWallpaper = async () => {
-      const nextIndex = (currentWallpaperIndex + 1) % DEFAULT_WALLPAPERS.length;
-      const nextWallpaper = DEFAULT_WALLPAPERS[nextIndex];
-      try {
-        await cacheManager.initialize();
-        await cacheManager.cacheWallpaper(nextWallpaper.url);
-      } catch {
-        // Silent fail for preloading
-      }
-    };
-
-    preloadNextWallpaper();
-  }, [currentWallpaperIndex]);
+  // 注释掉预加载，避免影响页面加载
+  // useEffect(() => {
+  //   const preloadNextWallpaper = async () => {
+  //     const nextIndex = (currentWallpaperIndex + 1) % DEFAULT_WALLPAPERS.length;
+  //     const nextWallpaper = DEFAULT_WALLPAPERS[nextIndex];
+  //     try {
+  //       await cacheManager.initialize();
+  //       await cacheManager.cacheWallpaper(nextWallpaper.url);
+  //     } catch {
+  //       // Silent fail for preloading
+  //     }
+  //   };
+  //
+  //   preloadNextWallpaper();
+  // }, [currentWallpaperIndex]);
 
   return {
     currentWallpaperIndex,

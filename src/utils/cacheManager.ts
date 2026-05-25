@@ -9,6 +9,7 @@ const ICON_CACHE_KEY = `${CACHE_PREFIX}icons`;
 const WALLPAPER_CACHE_KEY = `${CACHE_PREFIX}wallpapers`;
 const LAST_CHECK_KEY = `${CACHE_PREFIX}last_check`;
 const CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
+const FETCH_TIMEOUT = 8000; // 8秒超时
 
 const GOOGLE_FAVICON_REGEX = /^https?:\/\/www\.google\.com\/s2\/favicons/;
 
@@ -209,11 +210,17 @@ class CacheManager {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+      
       const response = await fetch(originalUrl, { 
         mode: 'cors',
         cache: 'force-cache',
-        credentials: 'omit'
+        credentials: 'omit',
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -265,11 +272,17 @@ class CacheManager {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+      
       const response = await fetch(originalUrl, {
         mode: 'cors',
         cache: 'force-cache',
-        credentials: 'omit'
+        credentials: 'omit',
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

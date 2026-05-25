@@ -46,19 +46,24 @@ function App() {
   const [showGroupEditor, setShowGroupEditor] = useState(false);
   const [editingGroup, setEditingGroup] = useState<any>(null);
 
-  // 优先显示本地缓存，后台静默同步 Supabase
+  // 优先显示本地缓存，后台静默同步 Supabase（延迟 5 秒后开始同步，避免影响页面加载）
   useEffect(() => {
-    const syncSupabase = async () => {
-      try {
-        const groups = await loadWebsiteGroupsFromSupabase();
-        if (groups.length > 0) {
-          setWebsiteGroups(groups);
+    const timer = setTimeout(() => {
+      const syncSupabase = async () => {
+        try {
+          const groups = await loadWebsiteGroupsFromSupabase();
+          if (groups.length > 0) {
+            setWebsiteGroups(groups);
+          }
+        } catch (error) {
+          // 静默失败，不影响用户体验
+          logger.debug('Supabase sync failed, continuing with local cache');
         }
-      } catch (error) {
-        // 静默失败，不影响用户体验
-      }
-    };
-    syncSupabase();
+      };
+      syncSupabase();
+    }, 5000); // 延迟 5 秒，确保页面完全加载后再同步
+
+    return () => clearTimeout(timer);
   }, [setWebsiteGroups]);
 
   const searchSuggestions = useMemo(() => {
