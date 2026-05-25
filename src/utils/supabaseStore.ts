@@ -3,32 +3,56 @@ import type { WebsiteGroup } from '../types/navigation';
 import { DEFAULT_WEBSITE_GROUPS, GROUP_SECTIONS } from '../data/navigation';
 import { logger } from './logger';
 
+const FETCH_TIMEOUT = 8000;
+
 export async function fetchWebsites(): Promise<WebsiteData[]> {
-  const { data, error } = await supabase
-    .from('websites')
-    .select('*')
-    .order('position', { ascending: true });
-  
-  if (error) {
-    logger.error('Failed to fetch websites:', error);
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    
+    const { data, error } = await supabase
+      .from('websites')
+      .select('*')
+      .order('position', { ascending: true })
+      .abortSignal(controller.signal as any);
+    
+    clearTimeout(timeoutId);
+    
+    if (error) {
+      logger.warn('Failed to fetch websites:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err: any) {
+    logger.warn('Failed to fetch websites:', err?.message || err);
     return [];
   }
-  
-  return data;
 }
 
 export async function fetchGroups(): Promise<GroupData[]> {
-  const { data, error } = await supabase
-    .from('groups')
-    .select('*')
-    .order('position', { ascending: true });
-  
-  if (error) {
-    logger.error('Failed to fetch groups:', error);
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    
+    const { data, error } = await supabase
+      .from('groups')
+      .select('*')
+      .order('position', { ascending: true })
+      .abortSignal(controller.signal as any);
+    
+    clearTimeout(timeoutId);
+    
+    if (error) {
+      logger.warn('Failed to fetch groups:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err: any) {
+    logger.warn('Failed to fetch groups:', err?.message || err);
     return [];
   }
-  
-  return data;
 }
 
 export async function upsertWebsite(website: Omit<WebsiteData, 'created_at' | 'updated_at'>): Promise<boolean> {
