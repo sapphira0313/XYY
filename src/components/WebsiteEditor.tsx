@@ -45,22 +45,28 @@ export function WebsiteEditor({ website, isOpen, onClose, onSave }: WebsiteEdito
       return;
     }
 
-    const websiteData = {
-      id: website?.id || `site${Date.now()}`,
-      name: formData.name,
-      url: formData.url,
-      icon: formData.icon || `https://${new URL(formData.url).hostname}/favicon.ico`,
-      position: website?.position || 0,
-      type: formData.type,
-      group_id: 'group1',
-    };
+    try {
+      const hostname = new URL(formData.url).hostname;
+      const websiteData = {
+        id: website?.id || `site${Date.now()}`,
+        name: formData.name,
+        url: formData.url,
+        icon: formData.icon || `https://${hostname}/favicon.ico`,
+        position: website?.position || 0,
+        type: formData.type,
+        group_id: formData.type, // 使用分类 ID 作为 group_id
+      };
 
-    const success = await upsertWebsite(websiteData);
-    if (success) {
-      onSave();
-      onClose();
-    } else {
-      alert('保存失败');
+      const success = await upsertWebsite(websiteData);
+      if (success) {
+        onSave();
+        onClose();
+      } else {
+        alert('保存失败，请检查 Supabase 连接');
+      }
+    } catch (err) {
+      console.error('网站数据处理失败:', err);
+      alert('网站数据处理失败');
     }
   };
 
