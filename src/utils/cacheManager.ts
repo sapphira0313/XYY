@@ -282,7 +282,7 @@ class CacheManager {
 
   private isSvgUrl(url: string): boolean {
     const lowerUrl = url.toLowerCase();
-    return lowerUrl.endsWith('.svg') || lowerUrl.includes('.svg?');
+    return lowerUrl.endsWith('.svg') || lowerUrl.includes('.svg?') || lowerUrl.includes('/svg/');
   }
 
   async cacheWallpaper(originalUrl: string, forceRetry = false): Promise<string> {

@@ -13,10 +13,23 @@ function extractDomain(url: string): string | null {
   }
 }
 
+function normalizeIconUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.href;
+  } catch {
+    return url;
+  }
+}
+
 function getBackupIconUrls(domain: string): string[] {
   return [
     `https://favicon.bytedance.net/api/favicon?url=${domain}`,
     `https://favicon.im/favicon?url=${domain}`,
+    `https://${domain}/favicon.ico`,
+    `https://${domain}/favicon.png`,
+    `https://${domain}/apple-touch-icon.png`,
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
   ];
 }
 
@@ -49,7 +62,8 @@ export function useIcon(
   options: UseIconOptions = {}
 ): UseIconReturn {
   const { fallbackUrl = FALLBACK_ICON, useCache = true } = options;
-  const [src, setSrc] = useState<string>(() => getInitialIconUrl(url, useCache));
+  const normalizedUrl = normalizeIconUrl(url);
+  const [src, setSrc] = useState<string>(() => getInitialIconUrl(normalizedUrl, useCache));
   const [isLoading, setIsLoading] = useState(useCache);
   const [error, setError] = useState<Error | null>(null);
 
@@ -95,7 +109,7 @@ export function useIcon(
       }
 
       setError(err instanceof Error ? err : new Error('Failed to load icon'));
-      if (src === url) {
+      if (src === iconUrl) {
         setSrc(fallbackUrl);
       }
     } finally {
@@ -104,8 +118,8 @@ export function useIcon(
   }, [useCache, fallbackUrl, src]);
 
   useEffect(() => {
-    loadIcon(url);
-  }, [url, loadIcon]);
+    loadIcon(normalizedUrl);
+  }, [normalizedUrl, loadIcon]);
 
   return {
     src,
