@@ -213,27 +213,47 @@ class CacheManager {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
       
-      const response = await fetch(originalUrl, { 
-        mode: 'cors',
-        cache: 'force-cache',
-        credentials: 'omit',
-        signal: controller.signal
-      });
+      let base64: string;
       
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (this.isSvgUrl(originalUrl)) {
+        const response = await fetch(originalUrl, { 
+          mode: 'cors',
+          cache: 'force-cache',
+          credentials: 'omit',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const text = await response.text();
+        base64 = `data:image/svg+xml;base64,${btoa(text)}`;
+      } else {
+        const response = await fetch(originalUrl, { 
+          mode: 'cors',
+          cache: 'force-cache',
+          credentials: 'omit',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        base64 = await this.blobToBase64(blob);
       }
-
-      const blob = await response.blob();
-      const base64 = await this.blobToBase64(blob);
       
       const entry: IconCacheEntry = {
         originalUrl,
         cachedBase64: base64,
         timestamp: Date.now(),
-        size: blob.size,
+        size: base64.length,
         status: 'cached',
         retryCount: 0,
       };
@@ -258,6 +278,11 @@ class CacheManager {
       this.iconCache.set(originalUrl, entry);
       return originalUrl;
     }
+  }
+
+  private isSvgUrl(url: string): boolean {
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.endsWith('.svg') || lowerUrl.includes('.svg?');
   }
 
   async cacheWallpaper(originalUrl: string, forceRetry = false): Promise<string> {
