@@ -389,6 +389,24 @@ class CacheManager {
     return null;
   }
 
+  isIconFailed(originalUrl: string): boolean {
+    const cached = this.iconCache.get(originalUrl);
+    return cached?.status === 'error' && cached.retryCount >= 3;
+  }
+
+  markIconFailed(originalUrl: string): void {
+    const existingEntry = this.iconCache.get(originalUrl);
+    const entry: IconCacheEntry = {
+      originalUrl,
+      cachedBase64: existingEntry?.cachedBase64 || null,
+      timestamp: Date.now(),
+      size: existingEntry?.size || 0,
+      status: 'error',
+      retryCount: 3,
+    };
+    this.iconCache.set(originalUrl, entry);
+  }
+
   setCachedIcon(originalUrl: string, cachedBase64: string): void {
     const entry: IconCacheEntry = {
       originalUrl,

@@ -93,10 +93,39 @@ export function useIcon(
       }
 
       const domain = extractDomain(iconUrl);
-      const allUrls = domain ? [iconUrl, ...getBackupIconUrls(domain)] : [iconUrl];
+      
+      if (!domain) {
+        try {
+          const cachedUrl = await cacheManager.cacheIcon(iconUrl);
+          setSrc(cachedUrl);
+          setError(null);
+          setIsLoading(false);
+          return;
+        } catch {
+          setError(new Error('Failed to load icon'));
+          setSrc(fallbackUrl);
+          setIsLoading(false);
+          return;
+        }
+      }
 
-      for (let i = 0; i < allUrls.length; i++) {
-        const currentUrl = allUrls[i];
+      const isOriginalIconFailed = cacheManager.isIconFailed(iconUrl);
+      
+      if (!isOriginalIconFailed) {
+        try {
+          const cachedUrl = await cacheManager.cacheIcon(iconUrl);
+          setSrc(cachedUrl);
+          setError(null);
+          setIsLoading(false);
+          return;
+        } catch {
+          cacheManager.markIconFailed(iconUrl);
+        }
+      }
+
+      const backupUrls = getBackupIconUrls(domain);
+      for (let i = 0; i < backupUrls.length; i++) {
+        const currentUrl = backupUrls[i];
         
         if (abortRef.current?.signal.aborted) {
           return;
