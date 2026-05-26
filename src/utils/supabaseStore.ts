@@ -157,6 +157,33 @@ export async function deleteGroup(id: string): Promise<boolean> {
   }
 }
 
+export async function updateWebsitePositions(websites: { id: string; position: number }[]): Promise<boolean> {
+  try {
+    for (const website of websites) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+      
+      const { error } = await supabase
+        .from('websites')
+        .update({ position: website.position })
+        .eq('id', website.id)
+        .abortSignal(controller.signal as any);
+      
+      clearTimeout(timeoutId);
+      
+      if (error) {
+        logger.warn('Failed to update website position:', error);
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    logger.warn('Failed to update website positions:', error);
+    return false;
+  }
+}
+
 export async function syncDefaultData(): Promise<void> {
   try {
     const existingGroups = await fetchGroups();

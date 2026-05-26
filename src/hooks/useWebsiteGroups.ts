@@ -4,6 +4,7 @@ import { STORAGE_KEYS, loadStoredWebsiteGroups } from '../data/navigation';
 import type { WebsiteGroup } from '../types/navigation';
 import { reorderWebsiteGroups } from '../utils/navigation';
 import { logger } from '../utils/logger';
+import { updateWebsitePositions } from '../utils/supabaseStore';
 
 export function useWebsiteGroups() {
   const [websiteGroups, setWebsiteGroups] = useState<WebsiteGroup[]>(() => loadStoredWebsiteGroups());
@@ -36,9 +37,22 @@ export function useWebsiteGroups() {
         index: number;
       };
 
-      setWebsiteGroups((previousGroups) =>
-        reorderWebsiteGroups(previousGroups, sourceGroupId, sourceIndex, targetGroupId, targetIndex),
-      );
+      setWebsiteGroups((previousGroups) => {
+        const updatedGroups = reorderWebsiteGroups(previousGroups, sourceGroupId, sourceIndex, targetGroupId, targetIndex);
+        
+        const allWebsites: { id: string; position: number }[] = [];
+        updatedGroups.forEach(group => {
+          group.websites.forEach((website, index) => {
+            allWebsites.push({ id: website.id, position: index });
+          });
+        });
+        
+        updateWebsitePositions(allWebsites).catch(err => {
+          logger.warn('Failed to sync positions to Supabase:', err);
+        });
+        
+        return updatedGroups;
+      });
     } catch (error) {
       logger.error('Failed to process drag data:', error);
     }
