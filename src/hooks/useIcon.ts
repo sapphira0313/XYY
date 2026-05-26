@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { cacheManager } from '../utils/cacheManager';
 
 const FALLBACK_ICON =
@@ -24,17 +24,15 @@ function normalizeIconUrl(url: string): string {
 
 function getBackupIconUrls(domain: string): string[] {
   return [
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+    `https://favicon.bytedance.net/api/favicon?url=${domain}`,
     `https://${domain}/favicon.ico`,
     `https://${domain}/favicon.png`,
     `https://${domain}/apple-touch-icon.png`,
-    `https://${domain}/apple-touch-icon-precomposed.png`,
-    `https://${domain}/favicon-16x16.png`,
-    `https://${domain}/favicon-32x32.png`,
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-    `https://favicon.bytedance.net/api/favicon?url=${domain}`,
     `https://favicon.im/favicon?url=${domain}`,
-    `https://api.statvoo.com/favicon/?url=${domain}`,
-    `https://www.getfavicon.app/?url=https://${domain}`,
+    `https://${domain}/favicon-32x32.png`,
+    `https://${domain}/favicon-16x16.png`,
+    `https://${domain}/apple-touch-icon-precomposed.png`,
   ];
 }
 
@@ -71,6 +69,7 @@ export function useIcon(
   const [src, setSrc] = useState<string>(() => getInitialIconUrl(normalizedUrl, useCache));
   const [isLoading, setIsLoading] = useState(useCache);
   const [error, setError] = useState<Error | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const loadIcon = useCallback(async (iconUrl: string) => {
     if (!iconUrl) {
@@ -86,8 +85,7 @@ export function useIcon(
       return;
     }
 
-    const domain = extractDomain(iconUrl);
-    const backupUrls = domain ? getBackupIconUrls(domain) : [];
+    abortRef.current = new AbortController();
 
     try {
       await cacheManager.initialize();
@@ -99,31 +97,48 @@ export function useIcon(
         return;
       }
 
-      const cachedUrl = await cacheManager.cacheIcon(iconUrl);
-      setSrc(cachedUrl);
-    } catch (err) {
-      for (const backupUrl of backupUrls) {
+      const domain = extractDomain(iconUrl);
+      const allUrls = domain ? [iconUrl, ...getBackupIconUrls(domain)] : [iconUrl];
+
+      for (let i = 0; i < allUrls.length; i++) {
+        const currentUrl = allUrls[i];
+        
+        if (abortRef.current?.signal.aborted) {
+          return;
+        }
+
         try {
-          const cachedUrl = await cacheManager.cacheIcon(backupUrl);
+          const cachedUrl = await cacheManager.cacheIcon(currentUrl);
           setSrc(cachedUrl);
           setError(null);
           setIsLoading(false);
           return;
         } catch {
+          continue;
         }
       }
 
+      setError(new Error('Failed to load icon from all sources'));
+      if (src === iconUrl) {
+        setSrc(fallbackUrl);
+      }
+    } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load icon'));
       if (src === iconUrl) {
         setSrc(fallbackUrl);
       }
     } finally {
       setIsLoading(false);
+      abortRef.current = null;
     }
   }, [useCache, fallbackUrl, src]);
 
   useEffect(() => {
     loadIcon(normalizedUrl);
+
+    return () => {
+      abortRef.current?.abort();
+    };
   }, [normalizedUrl, loadIcon]);
 
   return {
