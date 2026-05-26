@@ -184,6 +184,47 @@ export async function updateWebsitePositions(websites: { id: string; position: n
   }
 }
 
+export async function syncAllToSupabase(groups: WebsiteGroup[]): Promise<boolean> {
+  try {
+    for (const group of groups) {
+      const groupData: GroupData = {
+        id: group.id,
+        name: group.name,
+        position: 0,
+      };
+      
+      const groupSuccess = await upsertGroup(groupData);
+      if (!groupSuccess) {
+        logger.warn('Failed to upsert group:', group.id);
+        return false;
+      }
+      
+      for (const website of group.websites) {
+        const websiteData: Omit<WebsiteData, 'created_at' | 'updated_at'> = {
+          id: website.id,
+          name: website.name,
+          url: website.url,
+          icon: website.icon,
+          position: website.position || 0,
+          type: website.type || 'home',
+          group_id: group.id,
+        };
+        
+        const websiteSuccess = await upsertWebsite(websiteData);
+        if (!websiteSuccess) {
+          logger.warn('Failed to upsert website:', website.id);
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    logger.warn('Failed to sync all data to Supabase:', error);
+    return false;
+  }
+}
+
 export async function syncDefaultData(): Promise<void> {
   try {
     const existingGroups = await fetchGroups();

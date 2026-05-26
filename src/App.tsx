@@ -13,7 +13,7 @@ import { useSearch } from './hooks/useSearch';
 import { useWallpaperRotation } from './hooks/useWallpaperRotation';
 import { useWebsiteGroups } from './hooks/useWebsiteGroups';
 import type { Website } from './types/navigation';
-import { loadWebsiteGroupsFromSupabase } from './utils/supabaseStore';
+import { loadWebsiteGroupsFromSupabase, syncAllToSupabase } from './utils/supabaseStore';
 
 function App() {
   const {
@@ -138,6 +138,20 @@ function App() {
     }
   };
 
+  const handleSyncToSupabase = async () => {
+    try {
+      const success = await syncAllToSupabase(websiteGroups);
+      if (success) {
+        alert('同步成功！本地数据已上传至 Supabase');
+      } else {
+        alert('同步失败，请检查网络连接和 Supabase 配置');
+      }
+    } catch (error) {
+      logger.error('Failed to sync to Supabase:', error);
+      alert('同步失败，请检查网络连接');
+    }
+  };
+
   const handleAddWebsite = () => {
     setEditingWebsite(null);
     setShowWebsiteEditor(true);
@@ -158,6 +172,13 @@ function App() {
         <main className="flex-1 overflow-y-auto" id="main-content">
           <div className="max-w-6xl mx-auto px-4 py-8">
             <header className="text-center mb-8 relative">
+              <button
+                onClick={handleSyncToSupabase}
+                className="absolute top-0 right-10 w-8 h-8 flex items-center justify-center text-white text-sm font-bold hover:bg-white/10 rounded-lg transition-colors"
+                title="同步到 Supabase"
+              >
+                ↻
+              </button>
               <button
                 onClick={handleAddWebsite}
                 className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center text-white text-xl font-bold hover:bg-white/10 rounded-lg transition-colors"
