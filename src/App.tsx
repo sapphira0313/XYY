@@ -13,7 +13,7 @@ import { useSearch } from './hooks/useSearch';
 import { useWallpaperRotation } from './hooks/useWallpaperRotation';
 import { useWebsiteGroups } from './hooks/useWebsiteGroups';
 import type { Website } from './types/navigation';
-import { loadWebsiteGroupsFromSupabase } from './utils/supabaseStore';
+import { loadWebsiteGroupsFromSupabase, updateAllIconsToGoogleFavicon } from './utils/supabaseStore';
 
 function App() {
   const {
@@ -51,6 +51,10 @@ function App() {
     const timer = setTimeout(() => {
       const syncSupabase = async () => {
         try {
+          // 先更新所有图标到 Google Favicon API
+          await updateAllIconsToGoogleFavicon();
+          
+          // 然后加载最新数据
           const groups = await loadWebsiteGroupsFromSupabase();
           if (groups.length > 0) {
             setWebsiteGroups(groups);

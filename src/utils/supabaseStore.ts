@@ -205,14 +205,47 @@ export async function syncDefaultData(): Promise<void> {
   }
 }
 
-function migrateIconUrl(iconUrl: string): string {
-  const googleFaviconRegex = /^https?:\/\/www\.google\.com\/s2\/favicons\?domain=([^&]+)/;
-  const match = iconUrl.match(googleFaviconRegex);
-  if (match) {
-    const domain = match[1];
-    return `https://${domain}/favicon.ico`;
+export function extractDomainFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+  } catch {
+    return '';
   }
-  return iconUrl;
+}
+
+export async function updateAllIconsToGoogleFavicon(): Promise<number> {
+  try {
+    const websites = await fetchWebsites();
+    let updatedCount = 0;
+    
+    for (const website of websites) {
+      const domain = extractDomainFromUrl(website.url);
+      if (domain) {
+        const googleIconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+        
+        const { error } = await supabase
+          .from('websites')
+          .update({ icon: googleIconUrl })
+          .eq('id', website.id)
+          .abortSignal(controller.signal as any);
+        
+        clearTimeout(timeoutId);
+        
+        if (!error) {
+          updatedCount++;
+        }
+      }
+    }
+    
+    return updatedCount;
+  } catch (error) {
+    logger.warn('Failed to update icons:', error);
+    return 0;
+  }
 }
 
 export function convertToWebsiteGroups(websites: WebsiteData[]): WebsiteGroup[] {
@@ -220,7 +253,7 @@ export function convertToWebsiteGroups(websites: WebsiteData[]): WebsiteGroup[] 
     id: website.id,
     name: website.name,
     url: website.url,
-    icon: migrateIconUrl(website.icon),
+    icon: website.icon,
     position: website.position,
     type: (website.type || website.group_id || 'home') as typeof GROUP_SECTIONS[number]['id'],
   }));
