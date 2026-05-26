@@ -23,15 +23,52 @@ interface WebsiteSectionDefinition {
   className?: string;
 }
 
-function getSections(group: WebsiteGroup): WebsiteSectionDefinition[] {
+const NAVIGATION_GROUP_MAP: Record<string, string[]> = {
+  main: ['home', 'translate', 'document', 'plugin', 'tool', 'email'],
+  ai: ['foreign-ai', 'domestic-ai', 'video-ai', 'image-ai', 'music-ai', 'note-ai', 'design-ai'],
+  design: ['design-image', 'design-video'],
+  social: ['social'],
+};
+
+function getSectionGroup(sectionId: string): string | null {
+  for (const [groupName, sections] of Object.entries(NAVIGATION_GROUP_MAP)) {
+    if (sections.includes(sectionId)) {
+      return groupName;
+    }
+  }
+  return null;
+}
+
+function getSectionsForGroup(sectionId: string): string[] {
+  for (const [, sections] of Object.entries(NAVIGATION_GROUP_MAP)) {
+    if (sections.includes(sectionId)) {
+      return sections;
+    }
+  }
+  return [sectionId];
+}
+
+function getSections(group: WebsiteGroup, activeSectionId: string | null): WebsiteSectionDefinition[] {
   const indexedWebsites = group.websites.map((site, index) => ({ site, index }));
 
-  return GROUP_SECTIONS.map((section) => ({
+  const sections = GROUP_SECTIONS.map((section) => ({
     key: section.id,
     title: section.name,
     className: 'mb-4',
     websites: indexedWebsites.filter(({ site }) => site.type === section.id),
   })).filter((section) => section.websites.length > 0);
+
+  if (!activeSectionId) {
+    return sections;
+  }
+
+  const sectionGroup = getSectionGroup(activeSectionId);
+  if (sectionGroup) {
+    const groupSections = getSectionsForGroup(activeSectionId);
+    return sections.filter((section) => groupSections.includes(section.key));
+  }
+
+  return sections.filter((section) => section.key === activeSectionId);
 }
 
 export function GroupContent({ 
@@ -44,7 +81,7 @@ export function GroupContent({
   onEdit,
   onAddGroup,
 }: GroupContentProps) {
-  const sections = getSections(group);
+  const sections = getSections(group, activeSectionId);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -92,13 +129,9 @@ export function GroupContent({
     }
   }, [activeSectionId]);
 
-  const filteredSections = activeSectionId
-    ? sections.filter((section) => section.key === activeSectionId)
-    : sections;
-
   return (
     <div className={`group-content ${animationClass}`}>
-      {filteredSections.map((section) => (
+      {sections.map((section) => (
         <div key={section.key} id={`section-${section.key}`} className={section.className}>
           <h3 className="text-lg font-medium text-white mb-3 text-shadow-md">{section.title}</h3>
           <div className={`nav-grid${isDragging ? ' is-dragging' : ''}`}>
