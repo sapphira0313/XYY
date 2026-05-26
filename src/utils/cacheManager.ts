@@ -230,7 +230,7 @@ class CacheManager {
         }
         
         const text = await response.text();
-        base64 = `data:image/svg+xml;base64,${btoa(text)}`;
+        base64 = `data:image/svg+xml,${encodeURIComponent(text)}`;
       } else {
         const response = await fetch(originalUrl, { 
           mode: 'cors',
