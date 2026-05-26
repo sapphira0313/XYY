@@ -1,4 +1,4 @@
-const LOG_LEVEL = import.meta.env.VITE_LOG_LEVEL || 'warn';
+const LOG_LEVEL = import.meta.env.VITE_LOG_LEVEL || 'error';
 
 const levels = {
   debug: 0,
