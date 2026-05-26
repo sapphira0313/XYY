@@ -407,6 +407,13 @@ class CacheManager {
     this.iconCache.set(originalUrl, entry);
   }
 
+  resetFailedIcon(originalUrl: string): void {
+    const cached = this.iconCache.get(originalUrl);
+    if (cached && cached.status === 'error') {
+      this.iconCache.delete(originalUrl);
+    }
+  }
+
   setCachedIcon(originalUrl: string, cachedBase64: string): void {
     const entry: IconCacheEntry = {
       originalUrl,

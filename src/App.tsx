@@ -14,6 +14,7 @@ import { useWallpaperRotation } from './hooks/useWallpaperRotation';
 import { useWebsiteGroups } from './hooks/useWebsiteGroups';
 import type { Website } from './types/navigation';
 import { loadWebsiteGroupsFromSupabase, syncAllToSupabase } from './utils/supabaseStore';
+import { cacheManager } from './utils/cacheManager';
 
 function App() {
   const {
@@ -152,6 +153,13 @@ function App() {
     }
   };
 
+  const handleClearIconCache = () => {
+    if (confirm('确定要清除图标缓存吗？这将重新加载所有图标。')) {
+      cacheManager.clearAllCache();
+      alert('图标缓存已清除，刷新页面后将重新加载图标。');
+    }
+  };
+
   const handleAddWebsite = () => {
     setEditingWebsite(null);
     setShowWebsiteEditor(true);
@@ -172,6 +180,13 @@ function App() {
         <main className="flex-1 overflow-y-auto" id="main-content">
           <div className="max-w-6xl mx-auto px-4 py-8">
             <header className="text-center mb-8 relative">
+              <button
+                onClick={handleClearIconCache}
+                className="absolute top-0 right-20 w-8 h-8 flex items-center justify-center text-white text-sm font-bold hover:bg-white/10 rounded-lg transition-colors"
+                title="清除图标缓存"
+              >
+                ⟳
+              </button>
               <button
                 onClick={handleSyncToSupabase}
                 className="absolute top-0 right-10 w-8 h-8 flex items-center justify-center text-white text-sm font-bold hover:bg-white/10 rounded-lg transition-colors"
