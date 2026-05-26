@@ -184,7 +184,7 @@ export const DEFAULT_WEBSITE_GROUPS: WebsiteGroup[] = [
       { id: 'site81', name: 'Filmpac', url: 'https://filmpac.com/', icon: 'https://filmpac.com/favicon.ico', type: 'design-video' },
       { id: 'site92', name: 'Facebook', url: 'https://www.facebook.com/', icon: 'https://www.facebook.com/favicon.ico', type: 'social' },
       { id: 'site93', name: 'YouTube', url: 'https://www.youtube.com/', icon: 'https://www.youtube.com/favicon.ico', type: 'social' },
-      { id: 'site94', name: 'X(Twitter)', url: 'https://x.com/', icon: 'https://x.com/favicon.ico', type: 'social' },
+      { id: 'site94', name: 'X(Twitter)', url: 'https://x.com/', icon: 'https://www.google.com/s2/favicons?domain=x.com&sz=64', type: 'social' },
       { id: 'site95', name: 'Instagram', url: 'https://www.instagram.com/', icon: 'https://www.instagram.com/favicon.ico', type: 'social' },
       { id: 'site96', name: 'Pinterest', url: 'https://www.pinterest.com/', icon: 'https://www.pinterest.com/favicon.ico', type: 'social' },
       { id: 'site97', name: 'Reddit', url: 'https://www.reddit.com/', icon: 'https://www.reddit.com/favicon.ico', type: 'social' },
