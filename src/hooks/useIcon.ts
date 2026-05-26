@@ -24,12 +24,17 @@ function normalizeIconUrl(url: string): string {
 
 function getBackupIconUrls(domain: string): string[] {
   return [
-    `https://favicon.bytedance.net/api/favicon?url=${domain}`,
-    `https://favicon.im/favicon?url=${domain}`,
     `https://${domain}/favicon.ico`,
     `https://${domain}/favicon.png`,
     `https://${domain}/apple-touch-icon.png`,
+    `https://${domain}/apple-touch-icon-precomposed.png`,
+    `https://${domain}/favicon-16x16.png`,
+    `https://${domain}/favicon-32x32.png`,
     `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+    `https://favicon.bytedance.net/api/favicon?url=${domain}`,
+    `https://favicon.im/favicon?url=${domain}`,
+    `https://api.statvoo.com/favicon/?url=${domain}`,
+    `https://www.getfavicon.app/?url=https://${domain}`,
   ];
 }
 
