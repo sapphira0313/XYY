@@ -8,12 +8,12 @@ import { TopNav } from './components/TopNav';
 import { WallpaperPreview } from './components/WallpaperPreview';
 import { WebsiteEditor } from './components/WebsiteEditor';
 import { GroupEditor } from './components/GroupEditor';
-import { SEARCH_ENGINES, GROUP_SECTIONS } from './data/navigation';
+import { SEARCH_ENGINES, GROUP_SECTIONS, STORAGE_KEYS } from './data/navigation';
 import { useSearch } from './hooks/useSearch';
 import { useWallpaperRotation } from './hooks/useWallpaperRotation';
 import { useWebsiteGroups } from './hooks/useWebsiteGroups';
 import type { Website } from './types/navigation';
-import { loadWebsiteGroupsFromSupabase, updateAllIconsToGoogleFavicon } from './utils/supabaseStore';
+import { loadWebsiteGroupsFromSupabase } from './utils/supabaseStore';
 
 function App() {
   const {
@@ -46,28 +46,25 @@ function App() {
   const [showGroupEditor, setShowGroupEditor] = useState(false);
   const [editingGroup, setEditingGroup] = useState<any>(null);
 
-  // 优先显示本地缓存，后台静默同步 Supabase（延迟 5 秒后开始同步，避免影响页面加载）
+  // 仅在本地缓存为空时从 Supabase 同步，避免覆盖用户已保存的修改
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const syncSupabase = async () => {
-        try {
-          // 先更新所有图标到 Google Favicon API
-          await updateAllIconsToGoogleFavicon();
-          
-          // 然后加载最新数据
+    const syncFromSupabase = async () => {
+      try {
+        const hasLocalData = localStorage.getItem(STORAGE_KEYS.websiteGroups);
+        
+        if (!hasLocalData) {
           const groups = await loadWebsiteGroupsFromSupabase();
           if (groups.length > 0) {
             setWebsiteGroups(groups);
           }
-        } catch (error) {
-          // 静默失败，不影响用户体验
-          logger.debug('Supabase sync failed, continuing with local cache');
         }
-      };
-      syncSupabase();
-    }, 5000); // 延迟 5 秒，确保页面完全加载后再同步
-
-    return () => clearTimeout(timer);
+      } catch (error) {
+        logger.debug('Supabase sync failed, continuing with local cache');
+      }
+    };
+    
+    const syncTimer = setTimeout(syncFromSupabase, 3000);
+    return () => clearTimeout(syncTimer);
   }, [setWebsiteGroups]);
 
   const searchSuggestions = useMemo(() => {
