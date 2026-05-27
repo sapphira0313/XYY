@@ -9,6 +9,7 @@ export interface Website {
   icon: string;
   position?: number;
   type?: WebsiteType;
+  sectionName?: string;
 }
 
 export interface WebsiteGroup {

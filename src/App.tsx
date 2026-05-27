@@ -139,6 +139,26 @@ function App() {
     }
   };
 
+  const handleEditSection = (sectionId: string, newName: string) => {
+    setWebsiteGroups(prevGroups => {
+      const updatedGroups = prevGroups.map(group => ({
+        ...group,
+        websites: group.websites.map(site => {
+          if (site.type === sectionId) {
+            return {
+              ...site,
+              sectionName: newName,
+            };
+          }
+          return site;
+        }),
+      }));
+      
+      localStorage.setItem(STORAGE_KEYS.websiteGroups, JSON.stringify(updatedGroups));
+      return updatedGroups;
+    });
+  };
+
   const handleSyncToSupabase = async () => {
     try {
       const success = await syncAllToSupabase(websiteGroups);
@@ -228,6 +248,7 @@ function App() {
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                   onEdit={handleEditWebsite}
+                  onEditSection={handleEditSection}
                   onAddGroup={handleAddGroup}
                 />
               ) : null}

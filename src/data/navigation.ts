@@ -224,3 +224,14 @@ export function loadStoredWebsiteGroups(): WebsiteGroup[] {
     return normalizeWebsiteGroups(DEFAULT_WEBSITE_GROUPS);
   }
 }
+
+export function getSectionDisplayName(sectionId: string, websiteGroups: WebsiteGroup[]): string {
+  const section = GROUP_SECTIONS.find((s) => s.id === sectionId);
+  if (!section) return sectionId;
+  
+  const group = websiteGroups[0];
+  if (!group) return section.name;
+  
+  const siteInSection = group.websites.find((site) => site.type === sectionId);
+  return siteInSection?.sectionName || section.name;
+}

@@ -5,6 +5,14 @@ import type { Website, WebsiteGroup } from '../types/navigation';
 import { GROUP_SECTIONS } from '../data/navigation';
 import { NavItem } from './NavItem';
 
+function getSectionDisplayName(sectionId: string, websiteGroup: WebsiteGroup): string {
+  const section = GROUP_SECTIONS.find((s) => s.id === sectionId);
+  if (!section) return sectionId;
+  
+  const siteInSection = websiteGroup.websites.find((site) => site.type === sectionId);
+  return siteInSection?.sectionName || section.name;
+}
+
 interface GroupContentProps {
   group: WebsiteGroup;
   activeSectionId: string | null;
@@ -13,6 +21,7 @@ interface GroupContentProps {
   onDragOver: (event: DragEvent<HTMLAnchorElement>) => void;
   onDrop: (event: DragEvent<HTMLAnchorElement>, groupId: string, index: number) => void;
   onEdit: (site: Website) => void;
+  onEditSection?: (sectionId: string, newName: string) => void;
   onAddGroup?: () => void;
 }
 
@@ -79,11 +88,38 @@ export function GroupContent({
   onDragOver, 
   onDrop,
   onEdit,
+  onEditSection,
   onAddGroup,
 }: GroupContentProps) {
   const sections = getSections(group, activeSectionId);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSectionName, setEditingSectionName] = useState('');
+
+  const handleDoubleClickSection = (sectionId: string, currentName: string) => {
+    if (onEditSection) {
+      setEditingSectionId(sectionId);
+      setEditingSectionName(currentName);
+    }
+  };
+
+  const handleSectionNameSubmit = () => {
+    if (editingSectionId && editingSectionName.trim() && onEditSection) {
+      onEditSection(editingSectionId, editingSectionName.trim());
+    }
+    setEditingSectionId(null);
+    setEditingSectionName('');
+  };
+
+  const handleSectionNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSectionNameSubmit();
+    } else if (e.key === 'Escape') {
+      setEditingSectionId(null);
+      setEditingSectionName('');
+    }
+  };
 
   const handleDragStartWithState = useCallback(
     (event: DragEvent<HTMLAnchorElement>, groupId: string, index: number) => {
@@ -133,7 +169,25 @@ export function GroupContent({
     <div className={`group-content ${animationClass}`}>
       {sections.map((section) => (
         <div key={section.key} id={`section-${section.key}`} className={section.className}>
-          <h3 className="text-lg font-medium text-white mb-3 text-shadow-md">{section.title}</h3>
+          {editingSectionId === section.key ? (
+            <input
+              type="text"
+              value={editingSectionName}
+              onChange={(e) => setEditingSectionName(e.target.value)}
+              onBlur={handleSectionNameSubmit}
+              onKeyDown={handleSectionNameKeyDown}
+              autoFocus
+              className="text-lg font-medium text-white mb-3 text-shadow-md bg-transparent border-b-2 border-blue-400 outline-none px-1 w-full max-w-xs"
+            />
+          ) : (
+            <h3
+              onDoubleClick={() => handleDoubleClickSection(section.key, getSectionDisplayName(section.key, group))}
+              className="text-lg font-medium text-white mb-3 text-shadow-md cursor-pointer hover:text-blue-300 transition-colors"
+              title="双击编辑分类名称"
+            >
+              {getSectionDisplayName(section.key, group)}
+            </h3>
+          )}
           <div className={`nav-grid${isDragging ? ' is-dragging' : ''}`}>
             {section.websites.map(({ site, index }) => (
               <NavItem
