@@ -104,7 +104,7 @@ export const DEFAULT_WEBSITE_GROUPS: WebsiteGroup[] = [
       { id: 'site91', name: 'Emoji 大全', url: 'https://www.emojiall.com/zh-hans', icon: 'https://www.google.com/s2/favicons?domain=emojiall.com&sz=64', type: 'tool' },
       { id: 'site107', name: '文字加粗', url: 'https://lingojam.com/BoldTextGenerator', icon: 'https://www.google.com/s2/favicons?domain=lingojam.com&sz=64', type: 'tool' },
       { id: 'site108', name: 'Xmind', url: 'https://app.xmind.com/home/recents/_kzvaq_RCqRTZncew', icon: 'https://www.google.com/s2/favicons?domain=xmind.com&sz=64', type: 'tool' },
-      { id: 'site29', name: 'Gmail', url: 'https://mail.google.com/', icon: 'https://mail.google.com/favicon.ico', type: 'email' },
+      { id: 'site29', name: 'Gmail', url: 'https://mail.google.com/', icon: 'https://www.google.com/s2/favicons?domain=mail.google.com&sz=64', type: 'email' },
       { id: 'site30', name: 'Outlook', url: 'https://outlook.live.com/mail/', icon: 'https://www.google.com/s2/favicons?domain=live.com&sz=64', type: 'email' },
       { id: 'site82', name: '网易邮箱', url: 'https://mail.163.com/', icon: 'https://www.google.com/s2/favicons?domain=mail.163.com&sz=64', type: 'email' },
       { id: 'site20', name: 'Gemini', url: 'https://gemini.google.com/app', icon: 'https://www.google.com/s2/favicons?domain=gemini.google.com&sz=64', type: 'foreign-ai' },
