@@ -414,6 +414,10 @@ class CacheManager {
     }
   }
 
+  clearIconCache(url: string): void {
+    this.iconCache.delete(url);
+  }
+
   setCachedIcon(originalUrl: string, cachedBase64: string): void {
     const entry: IconCacheEntry = {
       originalUrl,

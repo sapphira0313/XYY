@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Website, WebsiteGroup } from '../types/navigation';
 import { upsertWebsite, deleteWebsite } from '../utils/supabaseStore';
 import { GROUP_SECTIONS } from '../data/navigation';
+import { cacheManager } from '../utils/cacheManager';
 
 interface WebsiteEditorProps {
   website: Website | null;
@@ -47,14 +48,22 @@ export function WebsiteEditor({ website, isOpen, onClose, onSave }: WebsiteEdito
 
     try {
       const hostname = new URL(formData.url).hostname;
+      const newIconUrl = formData.icon || `https://${hostname}/favicon.ico`;
+      
+      if (website && website.icon !== newIconUrl) {
+        cacheManager.clearIconCache(website.icon);
+      }
+      
+      cacheManager.clearIconCache(newIconUrl);
+
       const websiteData = {
         id: website?.id || `site${Date.now()}`,
         name: formData.name,
         url: formData.url,
-        icon: formData.icon || `https://${hostname}/favicon.ico`,
+        icon: newIconUrl,
         position: website?.position || 0,
         type: formData.type,
-        group_id: formData.type, // 使用分类 ID 作为 group_id
+        group_id: formData.type,
       };
 
       const success = await upsertWebsite(websiteData);
