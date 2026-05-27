@@ -416,6 +416,17 @@ class CacheManager {
 
   clearIconCache(url: string): void {
     this.iconCache.delete(url);
+    
+    const iconIndexStr = localStorage.getItem(this.getStorageKey(ICON_CACHE_KEY));
+    if (iconIndexStr) {
+      try {
+        const iconData = JSON.parse(iconIndexStr);
+        delete iconData[url];
+        localStorage.setItem(this.getStorageKey(ICON_CACHE_KEY), JSON.stringify(iconData));
+      } catch {
+        localStorage.removeItem(this.getStorageKey(ICON_CACHE_KEY));
+      }
+    }
   }
 
   setCachedIcon(originalUrl: string, cachedBase64: string): void {
